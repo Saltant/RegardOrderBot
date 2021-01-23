@@ -1,4 +1,8 @@
 ﻿using System;
+using System.Linq;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace RegardOrderBot
 {
@@ -6,7 +10,23 @@ namespace RegardOrderBot
 	{
 		static void Main(string[] args)
 		{
-			Console.WriteLine("Hello World!");
+			CreateHostBuilder(args).Build().Run();
 		}
+
+		public static IHostBuilder CreateHostBuilder(string[] args) =>
+			Host.CreateDefaultBuilder(args)
+				.UseSystemd()
+				.ConfigureHostConfiguration(configHost => 
+				{
+					configHost.AddCommandLine(args);
+				})
+				.ConfigureAppConfiguration(appConfig =>
+				{
+					appConfig.AddJsonFile("products.json", true, true);
+				})
+				.ConfigureServices((hostContext, services) =>
+				{
+					services.AddHostedService<OrderBot>();
+				});
 	}
 }
