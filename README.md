@@ -1,2 +1,2 @@
-# RegardOrderBot
-Bot for automatic ordering from the website 'Regard.ru'
+# Регард Бот
+Бот для автоматического заказа с сайта 'Regard.ru'
