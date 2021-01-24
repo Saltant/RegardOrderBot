@@ -1,6 +1,4 @@
-﻿using System;
-using System.Linq;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -26,7 +24,9 @@ namespace RegardOrderBot
 				})
 				.ConfigureServices((hostContext, services) =>
 				{
-					services.AddHostedService<OrderBot>();
+					//services.AddHostedService<OrderBot>();
+					services.AddSingleton<IHostedService, OrderBot>().BuildServiceProvider();
+					services.AddSingleton<RegardParser>().BuildServiceProvider();
 				});
 	}
 }

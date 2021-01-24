@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Threading;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RegardOrderBot.POCO;
 
@@ -9,20 +8,53 @@ namespace RegardOrderBot
 {
 	public class RegardParser
 	{
-		readonly ILogger logger;
-		readonly List<Product> products;
-		public RegardParser(ILogger logger, List<Product> products)
+		readonly ILogger<RegardParser> logger;
+		readonly OrderBot orderBot;
+		List<Product> products;
+		public RegardParser(ILogger<RegardParser> logger, IHostedService hostedService)
 		{
 			this.logger = logger;
-			this.products = products;
+			orderBot = (OrderBot)hostedService;
 		}
 
-		public void Start()
+		public bool? Start()
 		{
-			products.ForEach((product) =>
+			bool? result = null;
+			try
 			{
-				logger.LogInformation($"[{DateTime.Now:dd.MM.yyy HH.mm.ss}] Отслеживаю товар ID: {product.ArtNumber} с максимальной ценой: {product.MaxPrice.ToString("C", OrderBot.culture)}");
-			});
+				if (GetProducts())
+				{
+					products.ForEach((product) =>
+					{
+						logger.LogInformation($"[{DateTime.Now:dd.MM.yyy HH.mm.ss}] Отслеживаю товар ID: {product.ArtNumber} с максимальной ценой: {product.MaxPrice.ToString("C", OrderBot.culture)}");
+					});
+					result = true;
+				}
+				else
+				{
+					result = false;
+					logger.LogInformation($"[{DateTime.Now:dd.MM.yyy HH.mm.ss}] Нет товаров для отслеживания!");
+					orderBot.Host.StopApplication();
+				}
+				
+			}
+			catch (Exception ex)
+			{
+				logger.LogError(ex.Message);
+			}
+
+			return result;
+		}
+
+		private bool GetProducts()
+		{
+			if (orderBot == null)
+				throw new Exception($"Ошибка! не удалось получить сервис {nameof(OrderBot)}");
+
+			products = orderBot.Products;
+			if (products.Count > 0)
+				return true;
+			return false;
 		}
 	}
 }
