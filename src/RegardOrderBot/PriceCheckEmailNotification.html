@@ -1,0 +1,103 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 13px;
+        }
+
+        .messageTable {
+            width: 800px;
+            margin: 0px;
+            border-collapse: collapse;
+        }
+
+        .tdTitle {
+            font-weight: 700;
+            border-bottom: 1px solid;
+            padding: 10px;
+        }
+
+        .tdProp {
+            width: 200px;
+        }
+
+        .caption {
+            font-size: 20px;
+            vertical-align: middle;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+            border-bottom: 1px solid;
+            padding: 10px;
+            background-color: greenyellow;
+        }
+
+        .auto-style1 {
+            width: 200px;
+            height: 20px;
+        }
+
+        .auto-style2 {
+            height: 20px;
+        }
+
+        .tdFocus {
+            background-color: #FEEFB3;
+        }
+    </style>
+</head>
+<body>
+    <table class="messageTable">
+        <tr>
+            <td colspan="2" class="caption">
+                <img src="cid:email-warning@png" />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Товар в наличии.
+            </td>
+        </tr>
+    </table>
+    <table class="messageTable">
+        <tr>
+            <td colspan="2" class="tdTitle">
+                Отслеживаемый товар: <a href="cid:product@Link" _target="blank">cid:product@Name</a>.
+            </td>
+        </tr>
+    </table>
+    <table class="messageTable">
+        <tr>
+            <td class="tdProp">Текущая цена товара:</td>
+            <td class="tdFocus">
+                <p>cid:product@CurrentPrice</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="tdProp">Максимальная цена для заказа:</td>
+            <td class="tdFocus">
+                <p>cid:product@MaxPrice</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="tdProp">Разница в цене:</td>
+            <td class="tdFocus">
+                <p>cid:product@DifferencePrice</p>
+            </td>
+        </tr>
+    </table>
+    <hr />
+    <table class="messageTable">
+        <tr>
+            <td colspan="2" class="tdTitle">
+                Это оповещение пришло с автоматического сервиса 'Regard Order Bot', отвечать на него не нужно.
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" class="tdProp">
+                <img src="cid:email-logo@png" />
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

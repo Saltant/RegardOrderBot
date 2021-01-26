@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Threading;
 using AngleSharp.Dom;
-using System.Globalization;
 using AngleSharp.Html.Dom;
 
 namespace RegardOrderBot
@@ -22,12 +21,11 @@ namespace RegardOrderBot
 		readonly IHtmlParser parser;
 		readonly OrderBot orderBot;
 		readonly Dictionary<int, CancellationTokenSource> trackingProducts = new Dictionary<int, CancellationTokenSource>();
-		const string PRODUCT_LINK = "https://www.regard.ru/catalog/tovar";
 		const string PRODUCT_STATUS = "goodCard_inStock_button";
 		const string PRODUCT_NAME = "goods_head";
-		const string PRODUCT_IS_SOLD_OUT = "товар распродан";
 		const string PRODUCT_IN_STOCK = "в наличии";
 		List<Product> products;
+		public const string PRODUCT_LINK = "https://www.regard.ru/catalog/tovar";
 		public Dictionary<int, CancellationTokenSource> TrackingProducts
 		{
 			get
@@ -56,7 +54,6 @@ namespace RegardOrderBot
 				{
 					result = false;
 					logger.LogInformation($"[{DateTime.Now:dd.MM.yyy HH.mm.ss}] Нет товаров для отслеживания!");
-					orderBot.Host.StopApplication();
 				}
 			}
 			catch (Exception ex)
@@ -75,63 +72,89 @@ namespace RegardOrderBot
 				CancellationTokenSource cts = new CancellationTokenSource();
 				Task.Run(async () => await TrackProduct(product, cts)).ContinueWith((tracked) => 
 				{
-					Console.WriteLine($"End of Task with result: [{tracked.Result}]");
+					Product trackedProduct = tracked.Result;
+					switch (trackedProduct?.TrackedStatus)
+					{
+						case TrackedStatus.ProductNotFound:
+							logger.LogError($"Отслеживание товара: [{product.ArtNumber}]{product.ProductName} - Завершилось с ошибкой. " +
+								$"(Товар не найден)");
+							break;
+						case TrackedStatus.FailOrderProcess:
+							logger.LogError($"Отслеживание товара: [{product.ArtNumber}]{product.ProductName} - Завершилось с ошибкой. " +
+								$"(Не удалось заказать товар)");
+							break;
+						case TrackedStatus.ProductOrdered:
+							logger.LogInformation($"Отслеживание товара: [{product.ArtNumber}]{product.ProductName} - Успешно завершено.\n" +
+								$"Цена заказа составила: {product.CurrentPrice}");
+							break;
+					}
 				});
 				trackingProducts.Add(product.ArtNumber, cts);
+				result = true;
 			});
 			return result;
 		}
 
-		async Task<TrackedStatus> TrackProduct(Product product, CancellationTokenSource token)
+		async Task<Product> TrackProduct(Product product, CancellationTokenSource token)
 		{
 			logger.LogInformation($"[{DateTime.Now:dd.MM.yyy HH.mm.ss}] Отслеживаю товар ID: {product.ArtNumber} с максимальной ценой: {product.MaxPrice.ToString("C", OrderBot.culture)}");
-			TrackedStatus trackedStatus = TrackedStatus.Active;
+			product.TrackedStatus = TrackedStatus.Active;
+			DateTime maxPriceCheckTimestamp = DateTime.Now;
+			bool isFirstAttempt = true;
 			while (!token.IsCancellationRequested)
 			{
 				IDocument document = await context.OpenAsync($"{PRODUCT_LINK}{product.ArtNumber}htm");
-				string cook = document.Cookie.Split("PHPSESSID=")[1];
+				bool productNotFound = document.All.Where(x => x.HasAttribute("class") && x.GetAttribute("class").Equals("top")).Select(x => x.TextContent).Any(x => x.Contains("Товар не найден"));
+				if (productNotFound)
+				{
+					product.TrackedStatus = TrackedStatus.ProductNotFound;
+					break;
+				}
+				string cookie = document.Cookie.Split("PHPSESSID=")[1];
 				string productName = document.All.Where(x => x.HasAttribute("id") && x.GetAttribute("id").Equals(PRODUCT_NAME)).Select(x => x.TextContent).FirstOrDefault();
 				string productStatus = document.All.Where(x => x.HasAttribute("class") && x.GetAttribute("class").Contains(PRODUCT_STATUS)).Select(x => x.TextContent).FirstOrDefault();
-				
+				product.ProductName = productName;
 				if(productStatus == PRODUCT_IN_STOCK)
 				{
 					var productToken = document.All.Where(x => x.HasAttribute("name") && x.GetAttribute("name").Equals("token")).Select(x => x.Attributes.GetNamedItem("value").Value).FirstOrDefault();
 					string price = document.All.Where(x => x.HasAttribute("itemprop") && x.GetAttribute("itemprop").Equals("price")).Select(x => x.Attributes.GetNamedItem("content").Value).FirstOrDefault();
 					if(IsMaxPriceCheck(price, product.MaxPrice, out double currentPrice))
 					{
-						product.ProductName = productName;
 						product.CurrentPrice = currentPrice;
-						OrderResult orderResult = await orderBot.OrderProduct(product, productToken, cook);
+						OrderResult orderResult = await orderBot.OrderProduct(product, productToken, cookie);
 						if(orderResult.TrackedStatus == TrackedStatus.ProductOrdered)
 						{
 							IHtmlDocument orderDocument = parser.ParseDocument(orderResult.Content);
 							string orderNumber = orderDocument.All.Where(x => x.HasAttribute("class") && x.GetAttribute("class").Equals("green")).Select(x => x.TextContent).FirstOrDefault();
 							if (!string.IsNullOrEmpty(orderNumber))
 							{
-								trackedStatus = orderResult.TrackedStatus;
+								product.TrackedStatus = orderResult.TrackedStatus;
 								orderBot.ProductSuccessfulOrdered(product, orderNumber);
 							}
 						}
 						else if(orderResult.TrackedStatus == TrackedStatus.FailOrderProcess)
-						{
-							logger.LogCritical($"[{DateTime.Now:dd.MM.yyy HH.mm.ss}] В процессе заказа товара [{product.ArtNumber}] {productName} возникла ошибка (статус код http запроса не в диапазоне 200-299)");
-						}
+							logger.LogCritical($"[{DateTime.Now:dd.MM.yyy HH.mm.ss}] В процессе заказа товара [{product.ArtNumber}] {productName} возникла ошибка (код https запроса не в диапазоне 200-299)");
 					}
 					else
 					{
-						logger.LogInformation($"[{DateTime.Now:dd.MM.yyy HH.mm.ss}] товар [{product.ArtNumber}] {productName} в наличии но его цена {price} руб. [заданная максимальная цена товара: {product.MaxPrice} руб.]");
+						product.CurrentPrice = currentPrice;
+						await orderBot.ProductPriceLargerMaxPrice(product, maxPriceCheckTimestamp, isFirstAttempt).ContinueWith((task) => 
+						{
+							if (task.Result)
+							{
+								isFirstAttempt = false;
+								maxPriceCheckTimestamp = DateTime.Now;
+							}
+						});
 					}
 				}
-				else
-				{
-					logger.LogDebug($"[{product.ArtNumber}] {productName} - {productStatus}");
-				}
-				Task.Delay(5000).Wait();
+				if(!token.IsCancellationRequested)
+					Task.Delay(5000).Wait();
 			}
-			return await Task.FromResult(trackedStatus);
+			return await Task.FromResult(product);
 		}
 
-		bool IsMaxPriceCheck(string price, int maxPrice, out double currentPrice)
+		static bool IsMaxPriceCheck(string price, int maxPrice, out double currentPrice)
 		{
 			currentPrice = double.Parse(price, OrderBot.culture);
 			return maxPrice - currentPrice >= 0;
@@ -150,7 +173,9 @@ namespace RegardOrderBot
 
 		public enum TrackedStatus
 		{
+			None,
 			Active,
+			ProductNotFound,
 			InOrderProcess,
 			FailOrderProcess,
 			ProductOrdered

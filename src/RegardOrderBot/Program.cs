@@ -21,10 +21,10 @@ namespace RegardOrderBot
 				.ConfigureAppConfiguration(appConfig =>
 				{
 					appConfig.AddJsonFile("products.json", true, true);
+					appConfig.AddJsonFile("appsettings.json", false, true);
 				})
 				.ConfigureServices((hostContext, services) =>
 				{
-					//services.AddHostedService<OrderBot>();
 					services.AddSingleton<IHostedService, OrderBot>().BuildServiceProvider();
 					services.AddSingleton<RegardParser>().BuildServiceProvider();
 				});

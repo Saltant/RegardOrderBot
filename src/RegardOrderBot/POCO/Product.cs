@@ -6,5 +6,6 @@
 		public double CurrentPrice { get; set; }
 		public int MaxPrice { get; set; }
 		public string ProductName { get; set; }
+		public RegardParser.TrackedStatus TrackedStatus { get; set; }
 	}
 }

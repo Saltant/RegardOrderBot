@@ -2,7 +2,16 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <Authors>Saltant</Authors>
+    <Product>Regard Order Bot</Product>
+    <Description>App for automating tracking and order goods from online shop Regard.Ru</Description>
+    <PackageProjectUrl>https://github.com/Saltant/RegardOrderBot</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Saltant/RegardOrderBot</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReleaseNotes>First public release</PackageReleaseNotes>
+    <PackageTags>Bot, Ordering, Tracking, Online shop</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,6 +20,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Images\email-logo.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Images\email-warning.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="PriceCheckEmailNotification.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="OrderEmailNotification.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="products.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
