@@ -1,5 +1,10 @@
 language: csharp
+solution: RegardOrderBot.sln
 mono: none
-dotnet: 3.1.405
+dotnet: 5.0.102
+env:
+    global:
+        - DOTNET_CLI_TELEMETRY_OPTOUT: 1
+
 script:
- - dotnet restore
+    - dotnet build RegardOrderBot.sln -c Release
