@@ -1,5 +1,5 @@
 language: csharp
-solution: src/RegardOrderBot.sln
+solution: RegardOrderBot.sln
 mono: none
 dotnet: 5.0.102
 env:
@@ -7,4 +7,5 @@ env:
         - DOTNET_CLI_TELEMETRY_OPTOUT: 1
 
 script:
-    - dotnet build src/RegardOrderBot.sln -c Release
+    - cd src
+    - dotnet build RegardOrderBot.sln -c Release
