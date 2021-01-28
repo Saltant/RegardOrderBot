@@ -1,11 +1,10 @@
+sudo: required
 language: csharp
-solution: RegardOrderBot.sln
 mono: none
 dotnet: 5.0.102
-env:
-    global:
-        - DOTNET_CLI_TELEMETRY_OPTOUT: 1
-
+solution: RegardOrderBot.sln
 script:
-    - cd src
-    - dotnet build RegardOrderBot.sln -c Release
+  - cd src
+  - ls
+  - dotnet restore
+  - dotnet build -c Release
