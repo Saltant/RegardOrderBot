@@ -4,7 +4,7 @@ mono: none
 dotnet: 5.0.102
 solution: RegardOrderBot.sln
 script:
-  - cd src
+  - cd src/RegardOrderBot
   - ls
   - dotnet restore
   - dotnet build -c Release
